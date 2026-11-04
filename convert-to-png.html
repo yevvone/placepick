@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG to PNG 변환기</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f3f8fc;
+            padding: 40px;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .logo-preview {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #d0bcff;
+            border-radius: 10px;
+        }
+        .download-btn {
+            margin: 10px;
+            padding: 12px 25px;
+            background-color: #d0bcff;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            background-color: #a18cff;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .file-input {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px dashed #d0bcff;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .size-options {
+            margin: 20px 0;
+        }
+        .size-option {
+            margin: 10px;
+            padding: 8px 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #d0bcff;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .size-option:hover {
+            background-color: #d0bcff;
+            color: white;
+        }
+        .size-option.selected {
+            background-color: #d0bcff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PlacePick 로고 PNG 변환기</h1>
+        
+        <div class="logo-preview">
+            <h3>기본 로고 미리보기</h3>
+            <object data="placepick-logo.svg" type="image/svg+xml" width="300" height="100"></object>
+        </div>
+        
+        <div class="size-options">
+            <h3>크기 선택</h3>
+            <div class="size-option" onclick="selectSize('small')" id="small">작은 크기 (300x100)</div>
+            <div class="size-option" onclick="selectSize('medium')" id="medium">중간 크기 (600x200)</div>
+            <div class="size-option" onclick="selectSize('large')" id="large">큰 크기 (900x300)</div>
+        </div>
+        
+        <button class="download-btn" onclick="downloadPNG('placepick-logo.svg', 'placepick-logo.png')">전체 로고 다운로드</button>
+        <button class="download-btn" onclick="downloadPNG('placepick-icon.svg', 'placepick-icon.png')">아이콘만 다운로드</button>
+        <button class="download-btn" onclick="downloadPNG('placepick-text.svg', 'placepick-text.png')">텍스트만 다운로드</button>
+        
+        <div class="file-input">
+            <h3>사용자 정의 SVG 변환</h3>
+            <input type="file" id="svgFile" accept=".svg" onchange="handleFileUpload()">
+            <button class="download-btn" onclick="convertCustomSVG()" id="convertBtn" disabled>PNG로 변환</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedSize = 'medium';
+        let customSVG = null;
+
+        function selectSize(size) {
+            selectedSize = size;
+            document.querySelectorAll('.size-option').forEach(option => {
+                option.classList.remove('selected');
+            });
+            document.getElementById(size).classList.add('selected');
+        }
+
+        function downloadPNG(svgFile, filename) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // 크기 설정
+            let width, height;
+            switch(selectedSize) {
+                case 'small':
+                    width = 300; height = 100;
+                    break;
+                case 'medium':
+                    width = 600; height = 200;
+                    break;
+                case 'large':
+                    width = 900; height = 300;
+                    break;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // 배경색 설정
+            ctx.fillStyle = '#f3f8fc';
+            ctx.fillRect(0, 0, width, height);
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            img.src = svgFile;
+        }
+
+        function handleFileUpload() {
+            const file = document.getElementById('svgFile').files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    customSVG = e.target.result;
+                    document.getElementById('convertBtn').disabled = false;
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function convertCustomSVG() {
+            if (!customSVG) return;
+            
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            let width, height;
+            switch(selectedSize) {
+                case 'small':
+                    width = 300; height = 100;
+                    break;
+                case 'medium':
+                    width = 600; height = 200;
+                    break;
+                case 'large':
+                    width = 900; height = 300;
+                    break;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.fillStyle = '#f3f8fc';
+            ctx.fillRect(0, 0, width, height);
+            
+            const img = new Image();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                const link = document.createElement('a');
+                link.download = 'custom-logo.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            };
+            
+            const svgBlob = new Blob([customSVG], {type: 'image/svg+xml'});
+            img.src = URL.createObjectURL(svgBlob);
+        }
+
+        // 기본 선택
+        selectSize('medium');
+    </script>
+</body>
+</html> 

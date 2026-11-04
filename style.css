@@ -1,0 +1,365 @@
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f2f3fb;
+  margin: 0;
+  padding: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  max-width: 900px;
+  width: 100%;
+  box-shadow: 0 8px 30px rgba(149, 117, 205, 0.15);
+  text-align: center;
+}
+
+.upload-container {
+  max-width: 700px;
+  margin: 2rem auto;
+  padding: 2rem;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(149,117,205,0.10);
+  background: #fff;
+}
+
+h1 {
+  font-size: 3em;
+  color: #5b5bff;
+  font-weight: 700;
+  margin-top: 0;
+  margin-bottom: 0;
+  letter-spacing: 1px;
+}
+
+.logo-container {
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* 모드 전환 버튼 영역 */
+.mode-toggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+/* 모드 전환 버튼 스타일 */
+.toggle-button {
+  flex: 1;
+  padding: 12px 0;
+  border: none;
+  background-color: #d1c4e9;
+  color: white;
+  font-weight: bold;
+  border-radius: 12px 12px 0 0;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.2s;
+}
+
+/* 모드 전환 버튼 활성화(강조) 스타일 */
+.toggle-button.active {
+  background-color: #7165bc; /* index.html에서 사용하던 강조색으로 통일 */
+  color: white;
+  transform: scale(1.03);
+}
+
+/* 입력 섹션 영역 */
+/* 각 입력 영역(예: 이미지 선택 영역) 아래 여백 설정 */
+.input-section {
+  margin-bottom: 20px;
+}
+
+/* 입력 필드 앞에 붙는 텍스트(label) 스타일 설정 */
+label {
+  display: block;            /* label을 블록 요소로 만들어 줄바꿈 되게 함 */
+  margin-bottom: 10px;       /* label과 input 사이 여백 */
+  font-weight: 600;          /* 글자 약간 두껍게 */
+  color: #444;               /* 글자 색 어두운 회색 */
+}
+
+/* 파일 선택 input 및 텍스트 입력 input 스타일 공통 적용 */
+input[type="file"],
+input[type="text"] {
+  padding: 14px;             /* 안쪽 여백 */
+  width: 100%;               /* 컨테이너 너비 전체 사용 */
+  border: 2px solid #ddd;    /* 연한 회색 테두리 */
+  border-radius: 12px;       /* 둥근 모서리 */
+  font-size: 16px;           /* 글자 크기 */
+  box-sizing: border-box;    /* padding 포함한 너비 계산 */
+}
+
+
+/* 처리 버튼 스타일 */
+.action-button {
+  width: 100%;
+  padding: 14px;
+  background-color: #b39ddb;
+  color: white;
+  font-size: 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.action-button:hover {
+  background-color: #9575cd;
+}
+
+/* 결과 박스 스타일 */
+.result-box {
+  margin-top: 25px;
+  text-align: left;
+  white-space: pre-wrap;
+  background: #f9f5ff;
+  border-radius: 12px;
+  padding: 20px;
+  font-size: 15px;
+  color: #333;
+  border: 1px solid #e0dff0;
+}
+
+
+/* 로딩 콘솔 기본 = 숨기기로 만듦! */
+.loading { display: none; }
+
+/* 장소 정보 카드 스타일 */
+.location-card {
+    border: none !important;
+    background: #fff !important;
+    border-radius: 16px !important;
+    margin-bottom: 16px !important;
+    box-shadow: 0 4px 20px rgba(149, 117, 205, 0.12) !important;
+    padding: 0 !important;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.location-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(149, 117, 205, 0.18) !important;
+}
+
+.location-card-content {
+    padding: 20px;
+}
+
+.location-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+
+.location-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #b39ddb, #9575cd);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 16px;
+    flex-shrink: 0;
+}
+
+.location-icon i {
+    color: #fff;
+    font-size: 20px;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+}
+
+.location-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.location-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #2c3e50;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+
+.location-address {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin: 0;
+    line-height: 1.4;
+    word-break: keep-all;
+}
+
+.location-type {
+    display: inline-block;
+    background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+    color: #2e7d32;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 8px;
+    margin-top: 6px;
+}
+
+.location-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.location-actions .btn {
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 8px 16px;
+    transition: all 0.2s ease;
+    border: none;
+}
+
+.save-btn {
+    background: linear-gradient(135deg, #4caf50, #45a049) !important;
+    color: #fff !important;
+}
+
+.save-btn:hover {
+    background: linear-gradient(135deg, #45a049, #3d8b40) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.map-btn {
+    background: linear-gradient(135deg, #e3f2fd, #bbdefb) !important;
+    color: #1976d2 !important;
+    border: 1px solid #bbdefb !important;
+}
+
+.map-btn:hover {
+    background: linear-gradient(135deg, #bbdefb, #90caf9) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+/* 저장 버튼 비활성화 상태 */
+.save-btn:disabled {
+    background: #bdc3c7 !important;
+    color: #7f8c8d !important;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 지도 마커 스타일 개선 */
+.custom-marker {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #b39ddb, #9575cd);
+    border: 3px solid #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    color: #fff;
+    font-size: 18px;
+}
+
+.custom-marker i {
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+/* 정보창 스타일 개선 */
+.info-window {
+    padding: 16px;
+    min-width: 220px;
+    text-align: center;
+    border-radius: 12px;
+}
+
+.info-window h3 {
+    margin: 0 0 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.info-window .address {
+    margin: 0;
+    font-size: 13px;
+    color: #7f8c8d;
+    line-height: 1.4;
+}
+
+/* 결과 컨테이너 개선 */
+.result-container {
+    background: linear-gradient(135deg, #fcf8ff, #f5f0ff) !important;
+    border: 1px solid rgba(149, 117, 205, 0.1);
+}
+
+/* 로딩 상태 개선 */
+.loading {
+    text-align: center;
+    padding: 20px;
+}
+
+.loading .spinner-border {
+    width: 2rem;
+    height: 2rem;
+    color: #b39ddb !important;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .location-card-content {
+        padding: 16px;
+    }
+    
+    .location-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .location-icon {
+        margin-right: 0;
+        margin-bottom: 12px;
+    }
+    
+    .location-actions {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .location-actions .btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}
+
+/* 애니메이션 효과 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.location-card {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.location-card:nth-child(1) { animation-delay: 0.1s; }
+.location-card:nth-child(2) { animation-delay: 0.2s; }
+.location-card:nth-child(3) { animation-delay: 0.3s; }
+.location-card:nth-child(4) { animation-delay: 0.4s; }
+.location-card:nth-child(5) { animation-delay: 0.5s; }

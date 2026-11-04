@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <title>PlacePick</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+
+    <!-- 네이버 지도 API 불러오기 (Geocoder 포함) - 개선된 방식 -->
+    <script>
+        // 네이버 지도 API 동적 로딩
+        function loadNaverMapAPI() {
+            return new Promise((resolve, reject) => {
+                if (window.naver && window.naver.maps) {
+                    resolve(window.naver.maps);
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=hk7y7c86pt&submodules=geocoder';
+                script.async = true;
+                script.defer = true;
+                
+                script.onload = () => {
+                    if (window.naver && window.naver.maps) {
+                        resolve(window.naver.maps);
+                    } else {
+                        reject(new Error('네이버 지도 API 로드 실패'));
+                    }
+                };
+                
+                script.onerror = () => {
+                    reject(new Error('네이버 지도 API 스크립트 로드 실패'));
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+        
+        // 페이지 로드 시 API 로딩
+        window.addEventListener('load', async () => {
+            try {
+                await loadNaverMapAPI();
+                console.log('✅ 네이버 지도 API 로드 완료');
+                // 지도 초기화 함수 호출
+                if (typeof initMap === 'function') {
+                    initMap();
+                }
+            } catch (error) {
+                console.error('❌ 네이버 지도 API 로드 실패:', error);
+            }
+        });
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="api.js"></script>
+    <script src="app.js"></script>
+
+    <style>
+        body {
+            background: #f4f6fb;
+        }
+        .upload-container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 24px;
+            box-shadow: 0 4px 24px rgba(149,117,205,0.10);
+            background: #fff;
+        }
+        .preview-image {
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 1rem;
+            display: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(149,117,205,0.10);
+        }
+        .result-container {
+            margin-top: 2rem;
+            display: none;
+            background: #fcf8ff;
+            border-radius: 20px;
+            box-shadow: 0 2px 12px rgba(149,117,205,0.08);
+            padding: 2rem 1rem;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .btn-outline-primary, .btn-primary {
+            background: #b39ddb;
+            border: none;
+            color: #fff;
+            font-weight: 600;
+            border-radius: 18px;
+            font-size: 1.1em;
+            padding: 0.8em 0;
+            transition: background 0.2s;
+        }
+        .btn-outline-primary:hover, .btn-primary:hover {
+            background: #9575cd;
+            color: #fff;
+        }
+        .btn-check:checked + .btn-outline-primary {
+            background: #9575cd;
+            color: #fff;
+        }
+        .form-control {
+            border-radius: 16px;
+            border: 2px solid #ede7f6;
+            background: #f8f5ff;
+        }
+        .form-control:focus {
+            border-color: #b39ddb;
+            box-shadow: 0 0 0 0.15rem rgba(149,117,205,0.15);
+        }
+        .list-group-item {
+            border: none;
+            background: #fff;
+            border-radius: 12px !important;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #333;
+            box-shadow: 0 1px 4px rgba(149,117,205,0.04);
+            padding: 1rem;
+        }
+        
+        .list-group-item .pin-emoji {
+            font-size: 1.2em;
+            filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
+        }
+        
+        .list-group-item .location-name {
+            font-weight: 600;
+            color: #6f42c1;
+            margin-bottom: 0.25rem;
+        }
+        
+        .list-group-item .location-address {
+            color: #6c757d;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        .badge {
+            background-color: #b39ddb;
+        }
+        .spinner-border.text-primary {
+            color: #b39ddb !important;
+        }
+        h2, h4 {
+            color: #6f42c1;
+            font-weight: 700;
+        }
+        .copy-btn, #processButton {
+            background: #b39ddb;
+            border: none;
+            color: #fff;
+            border-radius: 18px;
+            font-size: 1.1em;
+            font-weight: 600;
+            padding: 0.8em 0;
+            width: 100%;
+            margin-top: 1.5rem;
+            transition: background 0.2s;
+        }
+        .copy-btn:hover, #processButton:hover {
+            background: #9575cd;
+        }
+        /* 지도 스타일 */
+        #map {
+            width: 100%;
+            height: 400px;
+            margin-top: 20px;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(149,117,205,0.10);
+            position: relative;
+            overflow: hidden;
+        }
+        .map-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        /* 마커 스타일 */
+        .custom-marker {
+            background-color: #b39ddb;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        /* 정보창 스타일 */
+        .info-window {
+            padding: 10px;
+            min-width: 200px;
+            text-align: center;
+        }
+        .info-window h3 {
+            margin: 0 0 5px 0;
+            font-size: 16px;
+            color: #6f42c1;
+        }
+        .info-window p {
+            margin: 0;
+            font-size: 14px;
+            color: #666;
+        }
+        .info-window .address {
+            margin-top: 5px;
+            font-size: 12px;
+            color: #999;
+        }
+        
+        /* 드래그앤드롭 영역 스타일 */
+        .drag-drop-area {
+            border: 2px dashed #b39ddb;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            background: #fcf8ff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .drag-drop-area:hover {
+            border-color: #9575cd;
+            background: #f5f0ff;
+        }
+        
+        .drag-drop-area.dragover {
+            border-color: #6f42c1;
+            background: #ede7f6;
+            transform: scale(1.02);
+        }
+        
+        /* 사용자 정보 및 로그아웃 버튼 스타일 */
+        .user-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 16px;
+            border-radius: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .user-info i {
+            font-size: 18px;
+            color: #6f42c1;
+        }
+        
+        .user-container .btn {
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.2);
+            transition: all 0.2s ease;
+        }
+        
+        .user-container .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+        }
+        
+        .drag-drop-content {
+            color: #6f42c1;
+        }
+        
+        .drag-drop-content i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        
+        .drag-drop-content p {
+            margin: 0;
+            font-weight: 500;
+        }
+
+         /* 입력창과 버튼을 감싸는 컨테이너 여백 */
+         #controls {
+            margin-bottom: 15px; /* 아래에 간격을 줘서 지도와 떨어지게 */
+        }
+
+        /* 텍스트 입력창 스타일 */
+        input[type="text"] {
+            padding: 8px; /* 안쪽 여백 */
+            width: 300px; /* 고정 너비 */
+        }
+
+        /* 버튼 스타일 */
+        button {
+            padding: 8px 12px; /* 안쪽 여백: 상하 8px, 좌우 12px */
+            font-weight: bold; /* 글씨를 굵게 */
+
+        }
+
+        /* 날씨 섹션 스타일 */
+        .weather-section {
+            background: linear-gradient(135deg, #8a80ca 0%, #764ba2 100%);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.15);
+        }
+
+        .weather-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .weather-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .weather-location {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .weather-temp {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .weather-desc {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .weather-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .humidity, .wind {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+            <!-- 사용자 정보 및 로그아웃 버튼 (상단 오른쪽 고정) -->
+        <div class="user-container">
+            <div class="user-info">
+                <i class="bi bi-person-circle"></i>
+                <span id="userNickname"></span>
+            </div>
+            <button id="logoutBtn" class="btn btn-outline-danger btn-sm">
+                <i class="bi bi-box-arrow-right"></i> 로그아웃
+            </button>
+        </div>
+    
+    <div class="container">
+        <div class="upload-container">
+            <div class="text-center" style="margin-bottom: 0.1rem; margin-top: 0.1rem;">
+                <svg width="570" height="170" viewBox="0 0 570 170" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                         <linearGradient id="pinGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <!-- 시작 색 -->
+                              <stop offset="0%" style="stop-color:#b08fe8; stop-opacity:1" />
+                              <!-- 이후 동일 색 유지 -->
+                              <stop offset="100%" style="stop-color:#b08fe8; stop-opacity:1" />
+                         </linearGradient>
+                    </defs>
+
+
+                    <!-- 텍스트 및 밑줄 -->
+                    <g>
+                        <text x="125" y="125"
+						       font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+						       font-size="68"
+						       font-weight="900"
+						       fill= "#b08fe8"
+						       letter-spacing="1">
+							PlacePick
+						</text>
+
+                        <!-- 텍스트 밑줄 -->
+                        <rect x="60" y="128" width="440" height="15" fill="#b08fe8" rx="7"/>
+                    </g>
+
+                    <!-- 맵핀 아이콘 (왼쪽) -->
+                    <g transform="translate(0,0)">
+                        <!-- 맵핀 상단 원형 부분 -->
+						<circle cx="63" cy="75" r="40" fill="url(#pinGradient)" />
+						<!-- 맵핀 하단 뾰족 부분 -->
+						<polygon points="63,143 96,98 30,98" fill="url(#pinGradient)" />
+						<!-- 별 -->
+						<path d="M63,54.7 L69.25,72.55 L88,72.55 L72.75,85.1 L78,103.5 L63,93.25 L48,103.5 L53.25,85.1 L38,72.55 L56.75,72.55 Z" fill="#f3f8fc"/>
+                    </g>
+                </svg>
+            </div>
+  
+            <!-- 날씨 정보 섹션 -->
+            <div class="weather-section mb-4">
+                <div class="weather-container">
+                    <div class="weather-info">
+                        <span class="weather-location">서울</span>
+                        <span class="weather-temp">-°C</span>
+                        <span class="weather-desc">-</span>
+                    </div>
+                    <div class="weather-details">
+                        <span class="humidity">습도: -%</span>
+                        <span class="wind">풍속: -m/s</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 입력 방식 선택 -->
+            <div class="mb-4">
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="inputType" id="imageInput" checked>
+                    <label class="btn btn-outline-primary" for="imageInput">이미지 업로드</label>
+                    
+                    <input type="radio" class="btn-check" name="inputType" id="urlInput">
+                    <label class="btn btn-outline-primary" for="urlInput">URL 입력</label>
+                </div>
+            </div>
+
+            <!-- 이미지 업로드 섹션 -->
+            <div id="imageUploadSection">
+                <div class="mb-3">
+                    <label for="imageFile" class="form-label">이미지 파일 선택</label>
+                    <div class="d-flex gap-2 align-items-center">
+                        <input type="file" class="form-control" id="imageFile" accept="image/*">
+                    </div>
+                </div>
+                
+                <!-- 클립보드 붙여넣기 안내 -->
+                <div class="mb-3">
+                    <p class="text-muted small mb-2">
+                        이미지 복사 후 이 페이지에서 Ctrl + V를 누르면 자동으로 첨부됩니다.
+                    </p>
+                </div>
+                
+                <!-- 드래그앤드롭 영역 -->
+                <div id="dragDropArea" class="drag-drop-area mb-3">
+                    <div class="drag-drop-content">
+                        <i class="bi bi-cloud-upload"></i>
+                        <p>여기로 이미지를 드래그&드롭 하세요</p>
+                    </div>
+                </div>
+                
+                <img id="imagePreview" class="preview-image">
+            </div>
+
+            <!-- URL 입력 섹션 -->
+            <div id="urlInputSection" style="display: none;">
+                <div class="mb-3">
+                    <label for="urlInputField" class="form-label">웹 페이지 URL</label>
+                    <input type="url" class="form-control" id="urlInputField" placeholder="https://example.com">
+                </div>
+                
+                <!-- 자동 처리 설정 -->
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoProcessToggle" checked>
+                        <label class="form-check-label" for="autoProcessToggle">
+                            <i class="bi bi-lightning-charge text-warning me-2"></i>
+                            링크 자동 처리 (클립보드 감지 시)
+                        </label>
+                    </div>
+                    <small class="text-muted">
+                        Instagram 링크는 자동으로 처리됩니다
+                    </small>
+                </div>
+            </div>
+
+            <div class="loading">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">처리 중...</p>
+            </div>
+
+            <div class="result-container">
+                <h4>추출된 장소 정보</h4>
+                <ul id="locationList" class="list-group">
+                </ul>
+
+            </div>
+
+            <!-- ✅ 여기서부터 추가: 정렬 컨트롤 + 나의 장소 -->
+            <!-- 정렬 컨트롤 -->
+            <section class="container my-3">
+              <div class="d-flex gap-2 align-items-center">
+                <label class="form-label m-0">정렬 기준</label>
+                <select id="myListSortBy" class="form-select" style="max-width:200px">
+                  <option value="createdAt-desc">최신순</option>
+                  <option value="createdAt-asc">과거순</option>
+                  <option value="name-asc">가나다순</option>
+                </select>
+              </div>
+            </section>
+
+            <!-- 나의 장소 -->
+            <section class="container mb-4">
+              <h5 class="mt-3">나의 장소</h5>
+              <ul id="myPlaceList" class="list-group"></ul>
+            </section>
+            <!-- ✅ 추가 끝 -->
+
+            <button id="processButton" class="btn btn-secondary w-100 mt-3" disabled>
+                <i class="bi bi-arrow-clockwise me-2"></i>재추출
+            </button>
+        </div>
+    
+    <!-- 입력창과 버튼이 들어갈 컨트롤 영역 -->
+    <div id="controls">
+        <input type="text" id="placeInput" placeholder="장소 이름을 입력하세요" />
+        <button onclick="geocodeAndMark()">지도에 표시</button>
+    </div>
+
+    <!-- 네이버 지도 컨테이너 추가 -->
+    <div id="map" style="width: 100%; height: 400px; margin-top: 20px; border-radius: 16px; box-shadow: 0 4px 24px rgba(149,117,205,0.10);"></div>
+</div>
+
+<script>
+    // 지도 초기화 확인
+    window.addEventListener('load', function() {
+        if (typeof naver !== 'undefined' && naver.maps) {
+            initMap();
+        } else {
+            console.error('네이버 지도 API가 로드되지 않았습니다.');
+        }
+        
+        // 페이지 로드 시 날씨 정보 가져오기
+        getWeatherData();
+    });
+
+    // 날씨 정보 가져오기 함수
+    async function getWeatherData() {
+        const city = 'Seoul'; // 또는 geolocation 사용 시 제거
+        try {
+            const response = await fetch(`/weather?city=${city}`);
+            const data = await response.json();
+
+        // ✅ WeatherAPI 스키마 기준(필수 필드 존재 여부 확인)
+            if (data && data.location && data.current) {
+                updateWeatherDisplay(data);
+            } else {
+                showDefaultWeather();
+            }
+        } catch (e) {
+            showDefaultWeather();
+        }
+    }
+
+
+    // 날씨 표시 업데이트
+	function updateWeatherDisplay(weatherData) {
+		const location = weatherData.location.name;
+		const temp = Math.round(weatherData.current.temp_c);
+		const description = weatherData.current.condition.text;
+		const humidity = weatherData.current.humidity;
+		const windSpeed = Math.round((weatherData.current.wind_kph || 0) / 3.6); // km/h → m/s
+
+		document.querySelector('.weather-location').textContent = location;
+		document.querySelector('.weather-temp').textContent = `${temp}°C`;
+		document.querySelector('.weather-desc').textContent = description;
+		document.querySelector('.humidity').textContent = `습도: ${humidity}%`;
+		document.querySelector('.wind').textContent = `풍속: ${windSpeed}m/s`;
+	}
+
+
+    // 기본 날씨 정보 표시 (API 키가 없을 때)
+    function showDefaultWeather() {
+        document.querySelector('.weather-location').textContent = '서울';
+        document.querySelector('.weather-temp').textContent = '30°C';
+        document.querySelector('.weather-desc').textContent = '맑음';
+        document.querySelector('.humidity').textContent = '습도: 45%';
+        document.querySelector('.wind').textContent = '풍속: 2m/s';
+    }
+
+    // 지도 초기화 함수
+    function initMap() {
+        console.log('=== 지도 초기화 시작 ===');
+        
+        var mapOptions = {
+            center: new naver.maps.LatLng(37.5665, 126.9780), // 서울시청 좌표 (기본값)
+            zoom: 13,
+            zoomControl: true,
+            zoomControlOptions: {
+                position: naver.maps.Position.TOP_RIGHT
+            }
+        };
+        
+        console.log('지도 옵션:', mapOptions);
+        
+        var map = new naver.maps.Map('map', mapOptions);
+        window.map = map; // 전역 변수로 저장
+        
+        console.log('지도 객체 생성 완료:', window.map);
+        console.log('=== 지도 초기화 완료 ===');
+    }
+
+    // 지도에 마커 표시 함수
+    function markOnMap(lat, lng, placeName, address) {
+        const point = new naver.maps.LatLng(lat, lng);
+
+        // 기존 마커 제거(선택)
+        if (window.marker) window.marker.setMap(null);
+
+        // 새 마커 생성
+        window.marker = new naver.maps.Marker({
+            position: point,
+            map: window.map,
+            title: placeName
+        });
+
+        // 정보창(선택)
+        const infoWindow = new naver.maps.InfoWindow({
+            content: `<div style="padding:10px;"><b>${placeName}</b><br>${address ? address : ""}</div>`
+        });
+        naver.maps.Event.addListener(window.marker, "click", function() {
+            infoWindow.open(window.map, window.marker);
+        });
+
+        // 지도 중심 이동
+        window.map.setCenter(point);
+        window.map.setZoom(15);
+    }
+
+function copyLocations() {
+    const items = Array.from(document.querySelectorAll('#locationList li'));
+    const text = items.map(li => li.textContent.trim()).join('\n');
+    navigator.clipboard.writeText(text).then(() => {
+        alert('장소 정보가 복사되었습니다!');
+    });
+}
+
+// 주소 검색 및 마커 표시 함수
+function geocodeAndMark() {
+    var address = document.getElementById('placeInput').value;
+    if (!address) {
+        alert('장소를 입력해주세요.');
+        return;
+    }
+
+    // 네이버 지역 검색 API로 정확한 좌표 획득
+    fetch('/search-place?query=' + encodeURIComponent(address))
+        .then(res => res.json())
+        .then(data => {
+            if (!data.items || data.items.length === 0) {
+                alert('주소/장소를 찾을 수 없습니다.');
+                return;
+            }
+            var item = data.items[0];
+            var lng = parseFloat(item.mapx) / 1e7;
+            var lat = parseFloat(item.mapy) / 1e7;
+            
+            // 정확한 좌표로 지도 중심 이동 및 마커 표시
+            var point = new naver.maps.LatLng(lat, lng);
+            if (window.marker) window.marker.setMap(null);
+            window.marker = new naver.maps.Marker({ 
+                position: point, 
+                map: window.map 
+            });
+            window.map.setCenter(point);
+            window.map.setZoom(15);
+        })
+        .catch(() => {
+            alert('주소/장소를 찾을 수 없습니다.');
+        });
+}
+
+// 여러 주소/장소명을 지도에 마커로 표시
+function displayOnMap(addresses) {
+  if (!window.naver?.maps) throw new Error('네이버 지도 API 로드 실패');
+
+  const map = window.map || new naver.maps.Map('map', {
+    center: new naver.maps.LatLng(37.5665, 126.9780),
+    zoom: 10
+  });
+  window.map = map;
+
+  addresses.forEach(addr => {
+    // 1차: 주소로 검색
+    naver.maps.Service.geocode({ query: addr }, (status, response) => {
+      if (status === naver.maps.Service.Status.ERROR || response.v2.meta.totalCount === 0) {
+        // 2차: 장소명 검색 프록시
+        fetch('/search-place?query=' + encodeURIComponent(addr))
+          .then(res => res.json())
+          .then(data => {
+            if (!data.items || data.items.length === 0) return;
+            var item = data.items[0];
+            var lng = parseFloat(item.mapx) / 1e7;
+            var lat = parseFloat(item.mapy) / 1e7;
+            new naver.maps.Marker({
+              position: new naver.maps.LatLng(lat, lng),
+              map: map,
+              title: addr
+            });
+          });
+        return;
+      }
+      var item = response.v2.addresses[0];
+      var point = new naver.maps.Point(item.x, item.y);
+      new naver.maps.Marker({
+        position: point,
+        map: map,
+        title: addr
+      });
+    });
+  });
+}
+
+// OCR/URL에서 추출된 장소명(또는 주소) 배열을 받아 지도에 마커 표시
+function markPlacesFromExtracted(placeCandidates) {
+  if (!Array.isArray(placeCandidates) || placeCandidates.length === 0) {
+    alert('장소 후보가 없습니다.');
+    return;
+  }
+  if (!window.naver?.maps) throw new Error('네이버 지도 API 로드 실패');
+
+  const map = window.map || new naver.maps.Map('map', {
+    center: new naver.maps.LatLng(37.5665, 126.9780),
+    zoom: 10
+  });
+  window.map = map;
+
+  // 기존 마커 모두 제거
+  if (window.markers && Array.isArray(window.markers)) {
+    window.markers.forEach(m => m.setMap(null));
+  }
+  window.markers = [];
+
+  placeCandidates.forEach(placeName => {
+    fetch('/search-place?query=' + encodeURIComponent(placeName))
+      .then(res => res.json())
+      .then(data => {
+        if (!data.items || data.items.length === 0) return;
+        const item = data.items[0];
+        const lng = parseFloat(item.mapx) / 1e7;
+        const lat = parseFloat(item.mapy) / 1e7;
+        const marker = new naver.maps.Marker({
+          position: new naver.maps.LatLng(lat, lng),
+          map: map,
+          title: placeName
+        });
+        window.markers.push(marker);
+        // 첫 번째 마커는 지도 중심 이동
+        if (window.markers.length === 1) {
+          map.setCenter(new naver.maps.LatLng(lat, lng));
+          map.setZoom(15);
+        }
+      });
+  });
+}
+window.markPlacesFromExtracted = markPlacesFromExtracted;
+</script>
+</body>
+</html>
